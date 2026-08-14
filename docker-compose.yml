@@ -1,0 +1,34 @@
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: lighthouse-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: lh_nautical
+      MYSQL_USER: lighthouse
+      MYSQL_PASSWORD: lighthouse
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  dashboard:
+    build:
+      context: .
+      dockerfile: app/Dockerfile
+    container_name: lighthouse-streamlit
+    depends_on:
+      - mysql
+    environment:
+      DATABASE_URL: mysql+pymysql://lighthouse:lighthouse@mysql:3306/lh_nautical
+      DATA_DIR: /data
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./dados:/data:ro
+      - ./scripts:/scripts:ro
+      - ./database:/database:ro
+
+volumes:
+  mysql_data:

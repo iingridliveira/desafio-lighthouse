@@ -1,0 +1,83 @@
+CREATE SCHEMA IF NOT EXISTS lh_nautical;
+SET search_path TO lh_nautical, public;
+
+CREATE TABLE IF NOT EXISTS brands (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    country VARCHAR(100),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS categories (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR(150) NOT NULL,
+    slug VARCHAR(150) NOT NULL UNIQUE,
+    parent_category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS customers (
+    id INTEGER PRIMARY KEY,
+    person_type VARCHAR(2) NOT NULL CHECK (person_type IN ('PF', 'PJ')),
+    legal_name VARCHAR(255) NOT NULL,
+    trade_name VARCHAR(255),
+    tax_id VARCHAR(14) NOT NULL UNIQUE,
+    state_registration VARCHAR(50),
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(30) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS employees (
+    id INTEGER PRIMARY KEY,
+    full_name VARCHAR(255) NOT NULL,
+    cpf VARCHAR(11) NOT NULL UNIQUE,
+    email VARCHAR(255) NOT NULL,
+    role VARCHAR(100) NOT NULL,
+    primary_location_id INTEGER NOT NULL,
+    hire_date DATE NOT NULL,
+    termination_date DATE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS orders (
+    id INTEGER PRIMARY KEY,
+    order_number VARCHAR(50) NOT NULL UNIQUE,
+    channel VARCHAR(50) NOT NULL,
+    customer_id INTEGER NOT NULL REFERENCES customers(id) ON DELETE RESTRICT,
+    salesperson_id INTEGER REFERENCES employees(id) ON DELETE SET NULL,
+    location_id INTEGER NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    subtotal NUMERIC(15,2) NOT NULL DEFAULT 0.00,
+    discount_amount NUMERIC(15,2) NOT NULL DEFAULT 0.00,
+    total NUMERIC(15,2) NOT NULL DEFAULT 0.00,
+    placed_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS fiscal_invoices (
+    id INTEGER PRIMARY KEY,
+    order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    nfe_number VARCHAR(50) NOT NULL,
+    nfe_access_key VARCHAR(44) NOT NULL UNIQUE,
+    series INTEGER NOT NULL,
+    issued_at TIMESTAMP NOT NULL,
+    status VARCHAR(50) NOT NULL,
+    total_amount NUMERIC(15,2) NOT NULL,
+    xml_storage_uri TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at);
+CREATE INDEX IF NOT EXISTS idx_orders_total ON orders(total);
+CREATE INDEX IF NOT EXISTS idx_orders_channel ON orders(channel);
